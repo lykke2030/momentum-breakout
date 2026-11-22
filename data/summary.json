@@ -1,0 +1,72 @@
+{
+ "params": {
+  "timeframe_min": 5,
+  "atr_len": 14,
+  "ema_fast": 4,
+  "ema_mid": 9,
+  "ema_slow": 21,
+  "rvol_days": 20,
+  "tod_adjust": true,
+  "use_daily_gate": true,
+  "daily_ret_lookback": 21,
+  "daily_min_ret": 0.1,
+  "daily_above_ema": true,
+  "require_momentum": true,
+  "gap_min_pct": 0.03,
+  "gap_min_rvol": 2.0,
+  "thrust_min_atr": 1.5,
+  "thrust_min_rvol": 2.0,
+  "thrust_close_pos": 0.75,
+  "persist_bars": 6,
+  "persist_min_up": 5,
+  "persist_min_move_atr": 2.0,
+  "momentum_expiry_bars": 30,
+  "pullback_min_atr": 0.5,
+  "max_retrace": 0.618,
+  "contr_bars": 3,
+  "require_contraction": true,
+  "contr_range_max_atr": 0.7,
+  "tight_close_max_atr": 0.6,
+  "ema_compress_max_atr": 0.5,
+  "require_inside_bar": false,
+  "bo_range_mult": 1.5,
+  "bo_close_pos": 0.75,
+  "bo_min_rvol": 1.0,
+  "first_entry": "09:45",
+  "last_entry": "15:30",
+  "skip_midday": false,
+  "target_r": 2.0,
+  "slippage_bps": 5.0,
+  "min_risk_pct": 0.001
+ },
+ "datasets": {
+  "broad": {
+   "label": "116 momentum & growth stocks, 5-min bars",
+   "short": "116 stocks \u00b7 Oct 2025\u2013Nov 2026",
+   "symbols": 98,
+   "universe": 116,
+   "first": "2025-10-08",
+   "last": "2026-11-18",
+   "oos_start": "2026-08-07",
+   "baseline": {
+    "fwd6_atr": -0.1515822779437289,
+    "eod_atr": -0.37925795989027494,
+    "n": 508353
+   }
+  },
+  "megacap": {
+   "label": "10 mega caps & index ETFs, 1-min bars resampled to 5-min",
+   "short": "Mega caps \u00b7 2021\u20132026",
+   "symbols": 10,
+   "universe": 10,
+   "first": "2021-04-12",
+   "last": "2026-09-24",
+   "oos_start": "2025-02-04",
+   "baseline": {
+    "fwd6_atr": -0.21820235099995466,
+    "eod_atr": -0.3717399667061338,
+    "n": 147234
+   }
+  }
+ }
+}
