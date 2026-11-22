@@ -14,9 +14,26 @@ Live site: https://lykke2030.github.io/momentum-breakout/
 
 ## Pages and files
 
+### Signal gallery: `signals/index.html`
+
+Live: https://lykke2030.github.io/momentum-breakout/signals/
+
+One card per trade, each showing the full 09:30–16:00 ET session. The page re-runs the backtest in the browser from the bundled 5-minute bars, a JavaScript port of `vtg_edge.py` that matches the Python results trade for trade (276 trades for the 116-stock set, 81 for the mega caps).
+
+- **Cards:** entry ▲, exit ✕, stop (dashed red), the trade window shaded green or red, and the strategy's own levels in dashed gold: momentum high, contraction box and breakout trigger. Also EMA 9/20/50, session VWAP, AVWAP from the prior day's open, prior day high/low/close, volume, the 30-minute opening range, and a daily chart (SMA 20/50/200) with the 10 sessions after the trade.
+- **Filters:** dataset, symbol, era, year, gap, day type and result. Sort orders include a reshuffle. Jump to a date, change the candle size, and switch each indicator on or off. 48 cards per page; charts draw as they scroll into view.
+- **Full view:** trade details, then the strategy levels and the day's numbers, a large chart with a hover readout and a 90/20-session daily chart. Step through trades with ← → and close with Esc.
+- **Review:** mark trades ✓ / ✗ with the buttons, the Y / N keys or the tag on a card. Marks are saved in your browser's localStorage under `momentum_breakout_signals_review_v1`.
+- **Data:** `data/gallery/*_bars.bin.gz` and `*_meta.json`. These are packed regular-session bars: 5-minute bars for both datasets, plus 1-minute bars for the mega-cap trade days, which enable 1m/2m candles there. The 116-stock set only has 5-minute bars from Sep 2025, so its 1m/2m buttons are off and its daily SMAs start late.
+
+### Results page and files
+
+
 | Path | What it is |
 |---|---|
-| `index.html` | The site. Single page: verdict, how the setup works, cumulative R chart, ablation (which part matters), breakdowns, costs vs stop width, a sortable list of every trade, method and downloads. A toggle switches between the two datasets. |
+| `signals/index.html` | The signal gallery (above). |
+| `data/gallery/` | Packed bar data for the gallery |
+| `index.html` | The results page. Single page: verdict, how the setup works, cumulative R chart, ablation (which part matters), breakdowns, costs vs stop width, a sortable list of every trade, method and downloads. A toggle switches between the two datasets. |
 | `data/summary.json` | Parameters, test periods, out-of-sample start dates and random-entry baselines |
 | `data/trades_broad.csv` | Every trade, 116 momentum and growth stocks, Oct 2025 – Nov 2026 |
 | `data/trades_megacap.csv` | Every trade, 10 mega caps and index ETFs, 2021 – 2026 |

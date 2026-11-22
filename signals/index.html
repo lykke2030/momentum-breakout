@@ -1,0 +1,764 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Momentum Breakout — Signal Gallery</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%234f8ff7'/%3E%3Cpath d='M6 22l7-7 5 4 8-10' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<style>
+  :root {
+    --bg: #0d0d0c; --surface: #161615; --surface-2: #1c1c1b; --surface-3: #262624; --border: #2c2c2a; --border-2: #3a3a37;
+    --text-primary: #ecebe6; --text-secondary: #b4b2aa; --text-muted: #85837b;
+    --up: #26a69a; --dn: #ef5350; --accent: #4f8ff7; --gold: #e0a43a;
+    --sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--bg); color: var(--text-primary); font: 14px/1.45 var(--sans); }
+  header { position: sticky; top: 0; z-index: 20; background: rgba(13,13,12,.96); backdrop-filter: blur(6px); border-bottom: 1px solid var(--border); }
+  .hwrap { max-width: 1800px; margin: 0 auto; padding: 14px 20px 12px; }
+  h1 { font-size: 20px; margin: 0 0 2px; letter-spacing: -.01em; }
+  h1 .sym { color: var(--accent); }
+  h1 a { font: 500 13px var(--sans); color: var(--accent); margin-left: 14px; text-decoration: none; }
+  .sub { color: var(--text-muted); font-size: 12.5px; margin: 0 0 12px; max-width: 1500px; }
+  .sub b { color: var(--text-secondary); }
+  .bar { display: flex; flex-wrap: wrap; gap: 10px 18px; align-items: center; }
+  .grp { display: flex; align-items: center; gap: 6px; }
+  .grp > span { font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: .05em; margin-right: 2px; }
+  .seg { display: inline-flex; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 2px; }
+  .seg button, .btn, select, input[type=date] {
+    font: 500 12.5px var(--sans); color: var(--text-secondary); background: transparent; border: 0; border-radius: 6px; padding: 5px 9px; cursor: pointer; }
+  .seg button[aria-pressed="true"] { background: var(--surface-3); color: var(--text-primary); }
+  .seg button:disabled { opacity: .35; cursor: not-allowed; }
+  .seg button:hover:not(:disabled), .btn:hover { color: var(--text-primary); }
+  .btn { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; }
+  select, input[type=date] { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; color: var(--text-primary); color-scheme: dark; }
+  button:focus-visible, select:focus-visible, input:focus-visible, .card:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .legend { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 12px; color: var(--text-secondary); margin-top: 10px; }
+  .legend label { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; user-select: none; }
+  .legend input { accent-color: var(--accent); margin: 0; }
+  .legend .fixed { display: inline-flex; align-items: center; gap: 6px; color: var(--text-muted); }
+  .sw { display: inline-block; width: 16px; height: 0; border-top: 2px solid; }
+  .sw.dot { border-top-style: dotted; }
+  .sw.dash { border-top-style: dashed; }
+  main { max-width: 1800px; margin: 0 auto; padding: 16px 20px 40px; }
+  .status { display: flex; justify-content: space-between; align-items: center; gap: 12px; color: var(--text-muted); font-size: 12.5px; margin-bottom: 12px; flex-wrap: wrap; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(380px, 1fr)); gap: 12px; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 10px 10px 8px; cursor: zoom-in; transition: border-color .12s; }
+  .card:hover { border-color: var(--border-2); }
+  .ch { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin: 0 2px 6px; }
+  .ch .d { font: 600 13.5px var(--mono); }
+  .ch .d .tk { color: var(--accent); margin-right: 8px; }
+  .ch .d small { color: var(--text-muted); font-weight: 500; margin-left: 6px; }
+  .ch .oc { font: 600 13px var(--mono); }
+  .tags { display: flex; flex-wrap: wrap; gap: 4px; margin: 0 2px 6px; }
+  .tag { font: 600 10.5px var(--mono); letter-spacing: .03em; padding: 2px 6px; border-radius: 5px; border: 1px solid var(--border-2); color: var(--text-secondary); }
+  .tag.up { color: var(--up); border-color: rgba(38,166,154,.45); }
+  .tag.dn { color: var(--dn); border-color: rgba(239,83,80,.45); }
+  .tag.gold { color: var(--gold); border-color: rgba(224,164,58,.45); }
+  .tag.era { color: var(--text-muted); }
+  .tag.chk { cursor: pointer; }
+  .tag.ok { color: var(--up); border-color: var(--up); }
+  .tag.bad { color: var(--dn); border-color: var(--dn); }
+  canvas.mini { width: 100%; height: 230px; display: block; border-radius: 6px; background: #111110; }
+  .pos { color: var(--up); } .neg { color: var(--dn); }
+  .pager { display: flex; justify-content: center; align-items: center; gap: 10px; margin: 22px 0 0; color: var(--text-muted); }
+  #loading { position: fixed; inset: 0; display: grid; place-items: center; background: var(--bg); z-index: 50; color: var(--text-secondary); font-size: 14px; }
+  #loading .bx { text-align: center; max-width: 520px; padding: 0 20px; }
+  #loading .spin { width: 28px; height: 28px; border: 3px solid var(--border-2); border-top-color: var(--accent); border-radius: 50%; animation: s 1s linear infinite; margin: 0 auto 12px; }
+  #loading .prog { width: 260px; height: 4px; background: var(--surface-3); border-radius: 2px; margin: 12px auto 0; overflow: hidden; }
+  #loading .prog i { display: block; height: 100%; width: 0; background: var(--accent); transition: width .15s; }
+  @keyframes s { to { transform: rotate(360deg); } }
+  /* modal */
+  #modal { position: fixed; inset: 0; z-index: 40; background: rgba(0,0,0,.78); display: none; align-items: center; justify-content: center; padding: 18px; }
+  #modal.open { display: flex; }
+  .mbox { background: var(--surface); border: 1px solid var(--border-2); border-radius: 14px; width: min(1500px, 100%); max-height: 100%; display: flex; flex-direction: column; overflow: hidden; }
+  .mhead { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 12px 16px; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+  .mhead h2 { font: 600 16px var(--mono); margin: 0; }
+  .mstats { display: flex; flex-wrap: wrap; gap: 4px 16px; padding: 8px 16px; font: 12px var(--mono); color: var(--text-secondary); border-bottom: 1px solid var(--border); }
+  .mstats b { color: var(--text-primary); font-weight: 600; }
+  .mscroll { overflow-y: auto; }
+  .mchart { position: relative; padding: 8px 10px 10px; }
+  canvas.dmini { width: 100%; height: 86px; display: block; border-radius: 6px; background: #111110; margin-top: 6px; }
+  canvas.bigd { width: 100%; height: 190px; display: block; background: #111110; border-radius: 8px; margin-top: 8px; }
+  .dlab { font: 600 10.5px var(--mono); color: var(--text-muted); margin: 6px 2px 0; letter-spacing: .03em; }
+  canvas.big { width: 100%; height: min(52vh, 540px); display: block; background: #111110; border-radius: 8px; }
+  #tip { position: absolute; pointer-events: none; background: rgba(22,22,21,.95); border: 1px solid var(--border-2); border-radius: 8px; padding: 6px 9px; font: 11.5px/1.5 var(--mono); color: var(--text-secondary); display: none; white-space: nowrap; }
+  #tip b { color: var(--text-primary); }
+  .note { color: var(--text-muted); font-size: 12px; }
+  @media (max-width: 760px) {
+    header { position: static; }
+    .hwrap, main { padding-left: 12px; padding-right: 12px; }
+    .seg { flex-wrap: wrap; }
+    .grid { grid-template-columns: minmax(0, 1fr); }
+    .sub { font-size: 12px; }
+    #modal { padding: 6px; }
+    .mhead .grp { flex-wrap: wrap; }
+  }
+</style>
+</head>
+<body>
+<div id="loading"><div class="bx"><div class="spin"></div><div id="loadMsg">Loading 5-minute bars…</div><div class="prog"><i id="loadBar"></i></div></div></div>
+
+<header><div class="hwrap">
+  <h1><span class="sym">Momentum Breakout</span> · Signal Gallery <a href="../">Strategy research →</a></h1>
+  <p class="sub" id="sub">Every trade of the momentum → base → contraction → breakout system.</p>
+  <div class="bar">
+    <div class="grp"><span>Data</span><div class="seg" id="fDs"><button data-v="broad" aria-pressed="true">116 stocks</button><button data-v="megacap">Mega caps</button></div></div>
+    <div class="grp"><span>Symbol</span><select id="fSym"><option value="">All</option></select></div>
+    <div class="grp"><span>Era</span><div class="seg" id="fEra">
+      <button data-v="all" aria-pressed="true">All</button><button data-v="2000">2000–09</button><button data-v="2010">2010–17</button><button data-v="2018">2018–20</button><button data-v="2021">2021+</button></div></div>
+    <div class="grp"><span>Year</span><select id="fYear"><option value="">Any</option></select></div>
+    <div class="grp"><span>Gap</span><div class="seg" id="fGap">
+      <button data-v="all" aria-pressed="true">Any</button><button data-v="up">Up ≥ 0.3 ATR</button><button data-v="down">Down ≥ 0.3 ATR</button><button data-v="flat">Small</button></div></div>
+    <div class="grp"><span>Day type</span><select id="fType">
+      <option value="">Any</option><option value="trendUp">Trend up (close near high)</option><option value="trendDn">Trend down (close near low)</option>
+      <option value="range">Choppy (no clear trend)</option><option value="revUp">Reversal up</option><option value="revDn">Reversal down</option>
+      <option value="big">Wide range (≥ 1.3 ATR)</option><option value="narrow">Narrow range (≤ 0.6 ATR)</option>
+      <option value="held">Gap held all day</option><option value="filled">Gap filled</option></select></div>
+    <div class="grp"><span>Result</span><div class="seg" id="fRes"><button data-v="all" aria-pressed="true">All</button><button data-v="win">Winners</button><button data-v="loss">Losers</button><button data-v="big">≥ 2R</button><button data-v="long">Long</button><button data-v="short">Short</button><button data-v="todo">Not reviewed</button><button data-v="bad">Marked ✗</button></div></div>
+    <div class="grp"><span>Order</span><select id="fSort">
+      <option value="shuffle">Shuffled (mixed eras)</option><option value="new">Newest first</option><option value="old">Oldest first</option>
+      <option value="best">Best R first</option><option value="worst">Worst R first</option><option value="gap">Biggest gap first</option>
+      <option value="range">Widest range first</option><option value="move">Biggest open→close first</option></select>
+      <button class="btn" id="reshuffle" title="New random mix">Reshuffle</button></div>
+    <div class="grp"><span>Jump to</span><input type="date" id="jump" aria-label="Jump to date"></div>
+    <div class="grp"><span>Candles</span><div class="seg" id="fTf"><button data-v="1">1m</button><button data-v="2">2m</button><button data-v="5" aria-pressed="true">5m</button></div></div>
+  </div>
+  <div class="legend" id="legend">
+    <label><input type="checkbox" data-k="e9" checked><i class="sw" style="border-color:#f5b041"></i>EMA 9</label>
+    <label><input type="checkbox" data-k="e20" checked><i class="sw" style="border-color:#4f8ff7"></i>EMA 20</label>
+    <label><input type="checkbox" data-k="e50"><i class="sw" style="border-color:#9aa0a6"></i>EMA 50</label>
+    <label><input type="checkbox" data-k="vwap" checked><i class="sw" style="border-color:#9085e9"></i>VWAP (session)</label>
+    <label><input type="checkbox" data-k="avwap" checked><i class="sw" style="border-color:#3fb6c9"></i>AVWAP from prior day's open</label>
+    <label><input type="checkbox" data-k="pd" checked><i class="sw dot" style="border-color:#d08bd6"></i>Prior day high / low / close</label>
+    <label><input type="checkbox" data-k="or"><i class="sw" style="border-color:#6f8fbf"></i>Opening range (30m)</label>
+    <label><input type="checkbox" data-k="vol" checked><i class="sw" style="border-color:#55534d"></i>Volume</label>
+    <label><input type="checkbox" data-k="lv" checked><i class="sw dash" style="border-color:#e0a43a"></i>Strategy levels: momentum high, contraction box, breakout trigger</label>
+    <label><input type="checkbox" data-k="daily" checked><i class="sw" style="border-color:#c9c7bf"></i>Daily context, incl. days after (SMA <span style="color:#f5b041">20</span> · <span style="color:#4f8ff7">50</span> · <span style="color:#c9c7bf">200</span>)</label>
+  </div>
+</div></header>
+
+<main>
+  <div class="status"><span id="count"></span><span class="note" id="statusNote">Click a chart to open it full size · ← → to step through trades · EMAs are computed on the candle timeframe shown and carry over from previous sessions</span></div>
+  <div class="grid" id="grid"></div>
+  <div class="pager" id="pager"></div>
+</main>
+
+<div id="modal" role="dialog" aria-modal="true" aria-labelledby="mTitle">
+  <div class="mbox">
+    <div class="mhead">
+      <h2 id="mTitle"></h2>
+      <div class="grp">
+        <div class="seg" id="mTf"><button data-v="1">1m</button><button data-v="2">2m</button><button data-v="5" aria-pressed="true">5m</button></div>
+        <button class="btn" id="mOk">✓ Correct</button><button class="btn" id="mBad">✗ Wrong</button><button class="btn" id="mPrev">← Prev</button><button class="btn" id="mNext">Next →</button><button class="btn" id="mClose">Close ✕</button>
+      </div>
+    </div>
+    <div class="mscroll">
+      <div class="mstats" id="mStats"></div>
+      <div class="mchart"><canvas class="big" id="big"></canvas><div id="tip"></div><div class="dlab" id="bigDLab"></div><canvas class="bigd" id="bigD"></canvas></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ===== Backtest engine (pure functions; mirrors vtg_edge.py bit for bit: pandas EWM + Kahan rolling means) =====
+const P0 = {
+  atrLen: 14, emaF: 4, emaM: 9, emaS: 21, rvolDays: 20, todAdjust: true,
+  dailyRetLb: 21, dailyMinRet: 0.10, dailyAboveEma: true,
+  gapMinPct: 0.03, gapMinRvol: 2.0, thrustMinAtr: 1.5, thrustMinRvol: 2.0, thrustClosePos: 0.75,
+  persistBars: 6, persistMinUp: 5, persistMinMoveAtr: 2.0, momExpiry: 30,
+  pullbackMinAtr: 0.5, maxRetrace: 0.618, K: 3, contrRangeMaxAtr: 0.7, tightCloseMaxAtr: 0.6, emaCompressMaxAtr: 0.5,
+  boRangeMult: 1.5, boClosePos: 0.75, boMinRvol: 1.0,
+  firstEntry: 15, lastEntry: 360,           // minutes after 09:30: 09:45 .. 15:30
+  targetR: 2.0, slippageBps: 5.0, minRiskPct: 0.001, minBars: 200,
+};
+
+// Decode one packed dataset (see pack.py). Returns an array of symbol objects.
+function decodeBars(meta, buf) {
+  const NB = meta.nb, U = meta.unit;
+  let off = 0;
+  const take = (T, bytes) => { const a = new T(buf.slice(off, off + NB * bytes)); off += NB * bytes; return a; };
+  const Mi = take(Uint16Array, 2), dO = take(Int32Array, 4), dCO = take(Int32Array, 4), dHB = take(Int32Array, 4), dLB = take(Int32Array, 4), Vv = take(Uint32Array, 4);
+  const out = []; let k = 0;
+  for (const sm of meta.symbols) {
+    const n = sm.nb, O = new Float64Array(n), H = new Float64Array(n), L = new Float64Array(n), C = new Float64Array(n), V = new Float64Array(n), M = new Uint16Array(n);
+    let pc = sm.base;
+    for (let j = 0; j < n; j++, k++) {
+      const o = pc + dO[k], c = o + dCO[k], h = Math.max(o, c) + dHB[k], l = Math.min(o, c) - dLB[k];
+      O[j] = o / U; H[j] = h / U; L[j] = l / U; C[j] = c / U; V[j] = Vv[k]; M[j] = Mi[k]; pc = c;
+    }
+    const A = [O, H, L, C];
+    for (const [j, w, ex] of sm.fix) A[w][j] = ex / 1e6;
+    const ND = sm.days.length, dStart = new Int32Array(ND), dLen = new Int32Array(ND), dates = new Array(ND);
+    let s = 0; sm.days.forEach(([d, c], i) => { dates[i] = d; dStart[i] = s; dLen[i] = c; s += c; });
+    const dOp = new Float64Array(ND), dHi = new Float64Array(ND), dLo = new Float64Array(ND), dCl = new Float64Array(ND), dVol = new Float64Array(ND);
+    for (let d = 0; d < ND; d++) { let hi = -Infinity, lo = Infinity, vv = 0; for (let j = dStart[d]; j < dStart[d] + dLen[d]; j++) { if (H[j] > hi) hi = H[j]; if (L[j] < lo) lo = L[j]; vv += V[j]; }
+      dOp[d] = O[dStart[d]]; dCl[d] = C[dStart[d] + dLen[d] - 1]; dHi[d] = hi; dLo[d] = lo; dVol[d] = vv; }
+    const dayOf = new Int32Array(n); for (let d = 0; d < ND; d++) dayOf.fill(d, dStart[d], dStart[d] + dLen[d]);
+    out.push({ s: sm.s, n, O, H, L, C, V, M, ND, dStart, dLen, dates, dO: dOp, dH: dHi, dL: dLo, dC: dCl, dV: dVol, dayOf });
+  }
+  return out;
+}
+
+// pandas Series.ewm(alpha, adjust=False).mean(), replicated exactly (incl. its normalisation step)
+function ewm(x, alpha) {
+  const n = x.length, o = new Float64Array(n); if (!n) return o;
+  let w = x[0]; o[0] = w; const ow = 1.0 * (1 - alpha);
+  for (let i = 1; i < n; i++) { const v = x[i]; if (w !== v) w = (ow * w + alpha * v) / (ow + alpha); o[i] = w; }
+  return o;
+}
+// pandas rolling(W, min_periods).mean() over vals.shift(1) (first value NaN), Kahan add/remove as in pandas' roll_mean
+function rollMeanPrev(vals, W, minp) {
+  const N = vals.length, out = new Float64Array(N);
+  const sh = (i) => (i === 0 ? NaN : vals[i - 1]);
+  let sum = 0, ca = 0, cr = 0, nobs = 0, neg = 0, prev = sh(0), same = 0;
+  const add = (v) => { if (v === v) { nobs++; const y = v - ca, t = sum + y; ca = t - sum - y; sum = t; if (v < 0 || Object.is(v, -0)) neg++; if (v === prev) same++; else same = 1; prev = v; } };
+  const rem = (v) => { if (v === v) { nobs--; const y = -v - cr, t = sum + y; cr = t - sum - y; sum = t; if (v < 0 || Object.is(v, -0)) neg--; } };
+  for (let i = 0; i < N; i++) {
+    const s = Math.max(0, i - W + 1);
+    if (i === 0) add(sh(0)); else { if (s > Math.max(0, i - W)) rem(sh(s - 1)); add(sh(i)); }
+    let r = NaN;
+    if (nobs >= minp && nobs > 0) { r = sum / nobs; if (same >= nobs) r = prev; else if (neg === 0 && r < 0) r = 0; else if (neg === nobs && r > 0) r = 0; }
+    out[i] = r;
+  }
+  return out;
+}
+
+// add_features(): per-bar arrays used by the detector
+function features(S, p) {
+  const n = S.n, { O, H, L, C, V, M, dayOf } = S;
+  const newDay = new Uint8Array(n), rng = new Float64Array(n), tr = new Float64Array(n), cpos = new Float64Array(n);
+  for (let i = 0; i < n; i++) {
+    newDay[i] = i === 0 || dayOf[i] !== dayOf[i - 1] ? 1 : 0;
+    rng[i] = H[i] - L[i];
+    let t = rng[i];
+    if (!newDay[i]) { const pc = C[i - 1]; t = Math.max(t, Math.abs(H[i] - pc), Math.abs(L[i] - pc)); }
+    tr[i] = t;
+    cpos[i] = rng[i] > 0 ? (C[i] - L[i]) / rng[i] : 0.5;
+  }
+  const atr = ewm(tr, 1 / p.atrLen), emaF = ewm(C, 2 / (p.emaF + 1)), emaM = ewm(C, 2 / (p.emaM + 1)), emaS = ewm(C, 2 / (p.emaS + 1));
+  // time-of-day slot statistics over previous sessions only
+  const slotIdx = new Map();
+  for (let i = 0; i < n; i++) { let a = slotIdx.get(M[i]); if (!a) slotIdx.set(M[i], (a = [])); a.push(i); }
+  const srng = new Float64Array(n), rvol = new Float64Array(n);
+  for (const idx of slotIdx.values()) {
+    const r = rollMeanPrev(idx.map((i) => rng[i]), p.rvolDays, 5), v = rollMeanPrev(idx.map((i) => V[i]), p.rvolDays, 5);
+    idx.forEach((i, j) => { srng[i] = r[j]; rvol[i] = V[i] / v[j]; });
+  }
+  // daily gate (prior day only)
+  const ND = S.ND, dEma = ewm(S.dC, 2 / 22), gapD = new Float64Array(ND).fill(NaN), retLb = new Float64Array(ND).fill(NaN), gate = new Uint8Array(ND);
+  for (let d = 0; d < ND; d++) {
+    if (d > 0) gapD[d] = S.dO[d] / S.dC[d - 1] - 1;
+    if (d - 1 - p.dailyRetLb >= 0) retLb[d] = S.dC[d - 1] / S.dC[d - 1 - p.dailyRetLb] - 1;
+    const above = d > 0 ? S.dC[d - 1] > dEma[d - 1] : false;
+    gate[d] = retLb[d] >= p.dailyMinRet && (!p.dailyAboveEma || above) ? 1 : 0;
+  }
+  return { newDay, rng, cpos, atr, emaF, emaM, emaS, srng, rvol, gapD, retLb, gate };
+}
+
+// detect() + simulate() for one symbol
+function runSymbol(S, p = P0) {
+  if (S.n < p.minBars) return [];
+  const F = features(S, p), { O: o, H: h, L: l, C: c, M, dayOf } = S, n = S.n, K = p.K, P = p.persistBars;
+  const { newDay, rng, cpos, atr, emaF, emaM, emaS, srng, rvol, gapD, retLb, gate } = F;
+  const gapAt = (i) => gapD[dayOf[i]];
+  const sigs = [];
+  let mom = null, dayStart = 0;
+  const minOf = (arr, a, b) => { let m = Infinity; for (let j = a; j < b; j++) if (arr[j] < m) m = arr[j]; return m; };
+  const maxOf = (arr, a, b) => { let m = -Infinity; for (let j = a; j < b; j++) if (arr[j] > m) m = arr[j]; return m; };
+  for (let i = 1; i < n; i++) {
+    if (newDay[i]) { mom = null; dayStart = i; }
+    let a = atr[i - 1];
+    if (!isFinite(a) || a <= 0) continue;
+    if (p.todAdjust && isFinite(srng[i])) a = Math.max(a, srng[i]);
+    const rv = isFinite(rvol[i]) ? rvol[i] : NaN;
+    // stage 3: breakout out of a contraction (contraction = the K bars before i)
+    if (i - dayStart >= K + 1) {
+      const w0 = i - K, w1 = i;
+      let baseOk = false, retrace = NaN, baseLow = NaN;   // momentum is required
+      if (mom) {
+        const inBase = mom.hiIdx < i - K;
+        baseLow = mom.hiIdx + 1 < i ? minOf(l, mom.hiIdx + 1, i) : Infinity;
+        const leg = mom.high - mom.legLow, pulled = mom.high - baseLow >= p.pullbackMinAtr * a;
+        retrace = leg > 0 ? (mom.high - baseLow) / leg : NaN;
+        const fresh = i - mom.hiIdx <= p.momExpiry;
+        baseOk = inBase && pulled && fresh && retrace <= p.maxRetrace;
+      }
+      let sr = 0; for (let j = w0; j < w1; j++) sr += rng[j];
+      const meanR = sr / K;   // numpy mean of 3 values: pairwise == sequential for n < 8
+      const cMax = maxOf(c, w0, w1), cMin = minOf(c, w0, w1), hMax = maxOf(h, w0, w1), lMin = minOf(l, w0, w1);
+      const contrOk = meanR <= p.contrRangeMaxAtr * a && cMax - cMin <= p.tightCloseMaxAtr * a &&
+        Math.abs(emaF[i - 1] - emaM[i - 1]) <= p.emaCompressMaxAtr * a && c[i - 1] >= emaS[i - 1];
+      let inside = false; for (let j = w0; j < w1; j++) if (j > dayStart && h[j] <= h[j - 1] && l[j] >= l[j - 1]) { inside = true; break; }
+      const t = M[i], timeOk = t >= p.firstEntry && t <= p.lastEntry;
+      const bo = c[i] > hMax && rng[i] >= p.boRangeMult * Math.max(meanR, 1e-9) && cpos[i] >= p.boClosePos && c[i] > o[i] && (!isFinite(rv) || rv >= p.boMinRvol);
+      if (bo && baseOk && contrOk && timeOk && gate[dayOf[i]] && i + 1 < n && !newDay[i + 1]) {
+        sigs.push({ i, momType: mom ? mom.type : "none", momStart: mom ? mom.start : -1, momHigh: mom ? mom.high : NaN, momHiIdx: mom ? mom.hiIdx : -1, legLow: mom ? mom.legLow : NaN,
+          baseLow, w0, trigger: hMax, stop: lMin, a, rvol: rv, inside, retrace, contrRatio: meanR / a, gap: gapAt(i), dailyRet: retLb[dayOf[i]], boRangeAtr: rng[i] / a });
+        mom = { type: mom ? mom.type : "none", legLow: lMin, high: h[i], hiIdx: i, start: i };
+        continue;
+      }
+    }
+    // stage 1: momentum detection / extension
+    let trig = null;
+    if (newDay[i - 1] && i - 1 === dayStart && isFinite(gapAt(i - 1)) && gapAt(i - 1) >= p.gapMinPct && isFinite(rvol[i - 1]) && rvol[i - 1] >= p.gapMinRvol) trig = "gap";
+    if (trig === null && rng[i] >= p.thrustMinAtr * a && cpos[i] >= p.thrustClosePos && c[i] > o[i] && isFinite(rv) && rv >= p.thrustMinRvol) trig = "thrust";
+    if (trig === null && i - dayStart >= P) {
+      let ups = 0; for (let j = i - P + 1; j <= i; j++) if (c[j] - c[j - 1] > 0) ups++;
+      if (ups >= p.persistMinUp && c[i] - c[i - P] >= p.persistMinMoveAtr * a && c[i] > emaM[i] && emaM[i] > emaS[i] && maxOf(rng, i - P + 1, i + 1) <= 1.5 * a) trig = "persist";
+    }
+    if (trig !== null && !mom) {
+      let lo = minOf(l, Math.max(dayStart, i - P), i + 1);
+      if (trig === "gap") lo = Math.min(lo, o[dayStart] / (1 + gapAt(dayStart)));
+      let hiIdx = dayStart; for (let j = dayStart + 1; j <= i; j++) if (h[j] > h[hiIdx]) hiIdx = j;
+      mom = { type: trig, legLow: lo, high: h[hiIdx], hiIdx, start: i };
+    }
+    if (mom && h[i] > mom.high) { mom.high = h[i]; mom.hiIdx = i; }
+    if (mom && mom.hiIdx < i) {
+      const bl = minOf(l, mom.hiIdx + 1, i + 1), leg = mom.high - mom.legLow;
+      if (leg > 0 && (mom.high - bl) / leg > p.maxRetrace) mom = null;
+      else if (i - mom.hiIdx > p.momExpiry) mom = null;
+    }
+  }
+  // simulate: next-bar open entry, stop at the contraction low, fixed (2R / close) and trailing (close < EMA9) exits
+  const slip = p.slippageBps / 1e4, trades = [];
+  let busy = -1;
+  for (const s of sigs) {
+    const i = s.i; if (i < busy) continue;
+    const e = i + 1, entry = o[e] * (1 + slip), stop = s.stop, risk = entry - stop;
+    if (risk <= entry * p.minRiskPct) continue;
+    const target = entry + p.targetR * risk;
+    let end = e; while (end + 1 < n && !newDay[end + 1]) end++;
+    const run = (trail) => {
+      for (let j = e; j <= end; j++) {
+        if (l[j] <= stop) return [(j > e ? Math.min(o[j], stop) : stop) * (1 - slip), j, "stop"];
+        if (!trail && h[j] >= target) return [(j > e ? Math.max(o[j], target) : target) * (1 - slip), j, "target"];
+        if (trail && j > e && c[j] < emaM[j]) return [c[j] * (1 - slip), j, "trail"];
+      }
+      return [c[end] * (1 - slip), end, "eod"];
+    };
+    const [x1, j1, why1] = run(false), [x2, j2, why2] = run(true);
+    const segH = maxOf(h, e, end + 1), segL = minOf(l, e, end + 1);
+    trades.push({ ...s, sym: S.s, di: dayOf[i], date: S.dates[dayOf[i]], ei: e, entry, risk, target,
+      xi: j1, exit: x1, reason: why1, R: (x1 - entry) / risk, xiT: j2, exitT: x2, reasonT: why2, RT: (x2 - entry) / risk,
+      mfe: (segH - entry) / risk, mae: (segL - entry) / risk });
+    busy = Math.max(j1, j2) + 1;
+  }
+  return trades;
+}
+function runAll(SYMS, p = P0) { const t = []; for (const S of SYMS) for (const x of runSymbol(S, p)) t.push(x); return t; }
+function mmToHHMM(m) { const t = m + 570; return String(Math.floor(t / 60)).padStart(2, "0") + ":" + String(t % 60).padStart(2, "0"); }
+
+if (typeof module !== "undefined") module.exports = { P0, decodeBars, runAll, runSymbol, features, ewm, rollMeanPrev, mmToHHMM };
+</script>
+<script>
+"use strict";
+const DATA_DIR = "../data/gallery/";
+const DS = {
+  broad: { label: "116 momentum & growth stocks", file: "broad_bars", min1: null },
+  megacap: { label: "10 mega caps & index ETFs", file: "megacap_bars", min1: "megacap_1m" },
+};
+const CHK_KEY = "momentum_breakout_signals_review_v1"; let CHECKS = {}; try { CHECKS = JSON.parse(localStorage.getItem(CHK_KEY) || "{}"); } catch (e) {}
+const saveChecks = () => { try { localStorage.setItem(CHK_KEY, JSON.stringify(CHECKS)); } catch (e) {} };
+const $ = (id) => document.getElementById(id);
+const COL = { up: "#26a69a", dn: "#ef5350", e9: "#f5b041", e20: "#4f8ff7", e50: "#9aa0a6", vw: "#9085e9", av: "#3fb6c9", pd: "#d08bd6", or: "#6f8fbf", gold: "#e0a43a",
+  grid: "#1f1f1d", axis: "#6f6d66", volUp: "rgba(38,166,154,.30)", volDn: "rgba(239,83,80,.30)" };
+const SHOW = { e9: true, e20: true, e50: false, vwap: true, avwap: true, pd: true, or: false, vol: true, lv: true, daily: true };
+const PAGE = 48;
+const LOADED = {};          // dataset key -> { SYMS, BYSYM, M1 (1-minute symbols by name or null), TRADES }
+let DSK = "broad", SYMS = null, BYSYM = null, M1 = null, DAYS = [], LIST = [], page = 0, TF = 5, MTF = 5, modalPos = -1, seed = Date.now() % 100000;
+const WD = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+/* ---------- loading ---------- */
+async function fetchJSON(u) { const r = await fetch(u); if (!r.ok) throw new Error(u + ": HTTP " + r.status); return r.json(); }
+async function fetchGz(u, onProg) {
+  const r = await fetch(u); if (!r.ok) throw new Error(u + ": HTTP " + r.status);
+  const total = +r.headers.get("content-length") || 0, chunks = []; let got = 0;
+  if (r.body && r.body.getReader) { const rd = r.body.getReader(); for (;;) { const { done, value } = await rd.read(); if (done) break; chunks.push(value); got += value.length; if (onProg) onProg(got, total); } }
+  else chunks.push(new Uint8Array(await r.arrayBuffer()));
+  const blob = new Blob(chunks);
+  // GitHub Pages may already have removed the gzip layer in transit: check the magic bytes
+  const head = new Uint8Array(await blob.slice(0, 2).arrayBuffer());
+  if (head[0] !== 0x1f || head[1] !== 0x8b) return blob.arrayBuffer();
+  if (typeof DecompressionStream === "undefined") throw new Error("this browser cannot unpack gzip data (DecompressionStream missing); please use a current Chrome, Edge, Firefox or Safari");
+  return new Response(blob.stream().pipeThrough(new DecompressionStream("gzip"))).arrayBuffer();
+}
+function setLoad(msg, frac) { $("loadMsg").textContent = msg; if (frac != null) $("loadBar").style.width = Math.round(frac * 100) + "%"; }
+async function loadDataset(key) {
+  if (LOADED[key]) return LOADED[key];
+  const ds = DS[key], ov = $("loading");
+  if (!ov.isConnected) { document.body.appendChild(ov); }
+  ov.style.display = "grid";
+  setLoad(`Loading 5-minute bars · ${ds.label}…`, 0);
+  const meta = await fetchJSON(DATA_DIR + ds.file + "_meta.json");
+  const mb = (b) => (b / 1e6).toFixed(1) + " MB";
+  const buf = await fetchGz(DATA_DIR + ds.file + ".bin.gz", (g, t) => setLoad(`Loading 5-minute bars · ${ds.label} · ${mb(g)}${t ? " of " + mb(t) : ""}`, t ? g / t : null));
+  setLoad(`Unpacking ${meta.nb.toLocaleString()} bars…`, 1); await new Promise((r) => setTimeout(r, 20));
+  const syms = decodeBars(meta, buf);
+  setLoad(`Re-running the backtest on ${syms.length} symbols…`, 1); await new Promise((r) => setTimeout(r, 20));
+  const trades = runAll(syms, P0);
+  let m1 = null;
+  if (ds.min1) { try { const mm = await fetchJSON(DATA_DIR + ds.min1 + "_meta.json"), bb = await fetchGz(DATA_DIR + ds.min1 + ".bin.gz"); m1 = new Map(decodeBars(mm, bb).map((S) => [S.s, S])); } catch (e) { m1 = null; } }
+  for (const S of syms) { S.dateIdx = new Map(S.dates.map((d, i) => [d, i])); S.sma = { s20: sma(S.dC, 20), s50: sma(S.dC, 50), s200: sma(S.dC, 200) }; S.datr = dailyAtr(S); }
+  if (m1) for (const S of m1.values()) S.dateIdx = new Map(S.dates.map((d, i) => [d, i]));
+  LOADED[key] = { SYMS: syms, BYSYM: new Map(syms.map((S) => [S.s, S])), M1: m1, TRADES: trades };
+  return LOADED[key];
+}
+function sma(a, n) { const o = new Float64Array(a.length).fill(NaN); let s = 0; for (let i = 0; i < a.length; i++) { s += a[i]; if (i >= n) s -= a[i - n]; if (i >= n - 1) o[i] = s / n; } return o; }
+function dailyAtr(S) {   // ATR(14) on daily bars, using the 14 sessions before day d only
+  const N = S.ND, tr = new Float64Array(N), atr = new Float64Array(N).fill(NaN);
+  for (let d = 1; d < N; d++) tr[d] = Math.max(S.dH[d] - S.dL[d], Math.abs(S.dH[d] - S.dC[d - 1]), Math.abs(S.dL[d] - S.dC[d - 1]));
+  for (let d = 15; d < N; d++) { let s = 0; for (let i = d - 14; i < d; i++) s += tr[i]; atr[d] = s / 14; }
+  return atr;
+}
+
+/* ---------- trade + day features ---------- */
+function buildDays(L) {
+  return L.TRADES.map((t) => {
+    const S = L.BYSYM.get(t.sym), d = t.di, o = S.dO[d], h = S.dH[d], l = S.dL[d], c = S.dC[d], pc = S.dC[d - 1], a = S.datr[d], rng = h - l;
+    const gapA = isFinite(a) ? (o - pc) / a : NaN, clv = rng > 0 ? (c - l) / rng : 0.5, oc = (c - o) / o;
+    const filled = o > pc ? l <= pc : o < pc ? h >= pc : true;
+    const body = rng > 0 ? Math.abs(c - o) / rng : 0, olv = rng > 0 ? (o - l) / rng : 0.5;
+    let type = "range";
+    if (body >= 0.6 && clv >= 0.8) type = "trendUp"; else if (body >= 0.6 && clv <= 0.2) type = "trendDn";
+    else if (olv <= 0.35 && clv >= 0.75 && c > o) type = "revUp"; else if (olv >= 0.65 && clv <= 0.25 && c < o) type = "revDn";
+    const y = +t.date.slice(0, 4), id = `${t.sym}|${t.date}|${mmToHHMM(S.M[t.ei])}`;
+    return { id, S, sym: t.sym, d, date: t.date, y, era: y < 2010 ? "2000" : y < 2018 ? "2010" : y < 2021 ? "2018" : "2021",
+      gap: (o - pc) / pc, gapA, rngA: isFinite(a) ? rng / a : NaN, oc, clv, filled, type, a, tr: t, side: 1, ts: t.date + mmToHHMM(S.M[t.ei]) + t.sym };
+  });
+}
+function rnd(s) { return () => { s |= 0; s = (s + 0x6D2B79F5) | 0; let t = Math.imul(s ^ (s >>> 15), 1 | s); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
+
+/* ---------- filtering ---------- */
+const F = { sym: "", era: "all", year: "", gap: "all", type: "", sort: "shuffle", res: "all" };
+function applyFilters() {
+  let L = DAYS.filter((x) => {
+    if (F.sym && x.sym !== F.sym) return false;
+    if (F.era !== "all" && x.era !== F.era) return false;
+    if (F.year && x.y !== +F.year) return false;
+    if (F.gap === "up" && !(x.gapA >= 0.3)) return false;
+    if (F.gap === "down" && !(x.gapA <= -0.3)) return false;
+    if (F.gap === "flat" && !(Math.abs(x.gapA) < 0.1)) return false;
+    if (F.type) {
+      if (F.type === "big") { if (!(x.rngA >= 1.3)) return false; }
+      else if (F.type === "narrow") { if (!(x.rngA <= 0.6)) return false; }
+      else if (F.type === "held") { if (x.filled || !(Math.abs(x.gapA) >= 0.1)) return false; }
+      else if (F.type === "filled") { if (!x.filled || !(Math.abs(x.gapA) >= 0.1)) return false; }
+      else if (x.type !== F.type) return false;
+    }
+    const t = x.tr, r = F.res;
+    if (r === "win" && !(t.R > 0)) return false; if (r === "loss" && !(t.R <= 0)) return false; if (r === "big" && !(t.R >= 2)) return false;
+    if (r === "long" && x.side < 0) return false; if (r === "short" && x.side > 0) return false;
+    if (r === "todo" && CHECKS[x.id]) return false; if (r === "bad" && CHECKS[x.id] !== "bad") return false;
+    return true;
+  });
+  if (F.sort === "shuffle") { const r = rnd(seed); L = L.map((x) => [r(), x]).sort((a, b) => a[0] - b[0]).map((p) => p[1]); }
+  else if (F.sort === "new") L.sort((a, b) => (a.ts < b.ts ? 1 : -1));
+  else if (F.sort === "old") L.sort((a, b) => (a.ts < b.ts ? -1 : 1));
+  else if (F.sort === "range") L.sort((a, b) => (b.rngA || 0) - (a.rngA || 0));
+  else if (F.sort === "gap") L.sort((a, b) => Math.abs(b.gapA || 0) - Math.abs(a.gapA || 0));
+  else if (F.sort === "move") L.sort((a, b) => Math.abs(b.oc) - Math.abs(a.oc));
+  else if (F.sort === "best") L.sort((a, b) => b.tr.R - a.tr.R);
+  else if (F.sort === "worst") L.sort((a, b) => a.tr.R - b.tr.R);
+  LIST = L; page = 0; renderGrid();
+}
+
+/* ---------- bars + indicators for one day ---------- */
+const CACHE = new Map();
+const has1m = (x) => !!(M1 && M1.has(x.sym) && M1.get(x.sym).dateIdx.has(x.date));
+const effTf = (x, tf) => (tf < 5 && !has1m(x) ? 5 : tf);
+function agg(S, d, tf, srcTf) {
+  const s = S.dStart[d], n = S.dLen[d], out = [];
+  let cur = null;
+  for (let j = 0; j < n; j++) {
+    const k = s + j, m = S.M[k], b = Math.floor(m / tf);
+    if (!cur || cur.b !== b) { cur = { b, m: b * tf, o: S.O[k], h: S.H[k], l: S.L[k], c: S.C[k], v: S.V[k] }; out.push(cur); }
+    else { if (S.H[k] > cur.h) cur.h = S.H[k]; if (S.L[k] < cur.l) cur.l = S.L[k]; cur.c = S.C[k]; cur.v += S.V[k]; }
+  }
+  return out;
+}
+function dayData(x, tf) {
+  tf = effTf(x, tf);
+  const key = x.sym + "|" + x.date + "|" + tf; if (CACHE.has(key)) return CACHE.get(key);
+  const S = tf < 5 ? M1.get(x.sym) : x.S, d = S.dateIdx.get(x.date);
+  // EMA warm-up: previous sessions at the same timeframe (EMAs carry over, no reset at the open)
+  let seedBars = []; for (let q = Math.max(0, d - 3); q < d; q++) seedBars = seedBars.concat(agg(S, q, tf));
+  const bars = agg(S, d, tf), n = bars.length;
+  const ema = (len) => { const a = 2 / (len + 1); let e = seedBars.length ? seedBars[0].c : bars[0].c; for (const b of seedBars) e += a * (b.c - e); const o = new Float64Array(n); for (let i = 0; i < n; i++) { e += a * (bars[i].c - e); o[i] = e; } return o; };
+  const e9 = ema(9), e20 = ema(20), e50 = ema(50), vw = new Float64Array(n), av = new Float64Array(n);
+  let pv = 0, vv = 0, apv = 0, avv = 0;
+  if (d > 0) { for (const b of agg(S, d - 1, tf)) { const v = b.v || 1; apv += (b.h + b.l + b.c) / 3 * v; avv += v; } }
+  for (let i = 0; i < n; i++) { const b = bars[i], tp = (b.h + b.l + b.c) / 3, v = b.v || 1; pv += tp * v; vv += v; vw[i] = pv / vv; apv += tp * v; avv += v; av[i] = apv / avv; }
+  let orH = -Infinity, orL = Infinity; for (const b of bars) if (b.m < 30) { if (b.h > orH) orH = b.h; if (b.l < orL) orL = b.l; }
+  const r = { bars, e9, e20, e50, vw, av, orH, orL, tf };
+  if (CACHE.size > 400) CACHE.delete(CACHE.keys().next().value);
+  CACHE.set(key, r); return r;
+}
+
+/* ---------- drawing ---------- */
+function draw(cv, x, tf, big) {
+  const dpr = window.devicePixelRatio || 1, W = cv.clientWidth, H = cv.clientHeight;
+  if (!W || !H) return null;
+  cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
+  const g = cv.getContext("2d"); g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, W, H);
+  const dd = dayData(x, tf), bars = dd.bars, n = bars.length, S = x.S, d = x.d; tf = dd.tf;
+  const pdh = S.dH[d - 1], pdl = S.dL[d - 1], pdc = S.dC[d - 1], tr = x.tr, M = S.M;
+  let lo = S.dL[d], hi = S.dH[d];
+  lo = Math.min(lo, tr.stop); hi = Math.max(hi, tr.stop);
+  if (SHOW.lv) { const sp = hi - lo; for (const v of [tr.momHigh, tr.trigger]) { if (!isFinite(v)) continue; if (v > hi && v < hi + sp * 0.4) hi = v; if (v < lo && v > lo - sp * 0.4) lo = v; } }
+  if (SHOW.pd) { lo = Math.min(lo, pdc); hi = Math.max(hi, pdc); }
+  const span0 = hi - lo;
+  if (SHOW.pd) { if (pdh <= hi + span0 * 0.25 && pdh > hi) hi = pdh; if (pdl >= lo - span0 * 0.25 && pdl < lo) lo = pdl; }
+  const pad = (hi - lo) * 0.06 || 0.01; lo -= pad; hi += pad;
+  const m = big ? { l: 8, r: 64, t: 10, b: 24 } : { l: 4, r: 44, t: 6, b: 16 };
+  const volH = SHOW.vol ? (big ? 70 : 34) : 0;
+  const pw = W - m.l - m.r, ph = H - m.t - m.b - volH;
+  const X = (min) => m.l + (min / 390) * pw, Y = (p) => m.t + (1 - (p - lo) / (hi - lo)) * ph;
+  const fs = big ? 11 : 9.5;
+  g.font = `${fs}px ui-monospace, Menlo, Consolas, monospace`;
+  const step = niceStep((hi - lo) / (big ? 8 : 4)), dec = step < 0.1 ? 2 : step < 1 ? 1 : 0;
+  g.strokeStyle = COL.grid; g.lineWidth = 1; g.fillStyle = COL.axis; g.textBaseline = "middle";
+  for (let p = Math.ceil(lo / step) * step; p <= hi; p += step) { const y = Math.round(Y(p)) + 0.5; g.beginPath(); g.moveTo(m.l, y); g.lineTo(W - m.r, y); g.stroke(); g.fillText(p.toFixed(dec), W - m.r + 5, y); }
+  g.textBaseline = "alphabetic";
+  for (const [mn, lab] of [[0, "9:30"], [60, "10:30"], [120, "11:30"], [180, "12:30"], [240, "13:30"], [300, "14:30"], [360, "15:30"]]) {
+    const xx = Math.round(X(mn)) + 0.5; g.strokeStyle = COL.grid; g.beginPath(); g.moveTo(xx, m.t); g.lineTo(xx, m.t + ph + volH); g.stroke();
+    if (big || mn % 120 === 0) { g.fillStyle = COL.axis; g.fillText(lab, xx + 2, H - 4); }
+  }
+  // opening range
+  if (SHOW.or && isFinite(dd.orH)) { g.fillStyle = "rgba(111,143,191,.14)"; g.strokeStyle = COL.or; g.fillRect(X(0), Y(dd.orH), X(30) - X(0), Y(dd.orL) - Y(dd.orH)); g.strokeRect(X(0) + .5, Y(dd.orH) + .5, X(30) - X(0), Y(dd.orL) - Y(dd.orH)); }
+  // trade window shading
+  const xe = X(M[tr.ei] + (tf === 5 ? 0 : 0.5)), xx = X(M[tr.xi] + 2.5);
+  g.fillStyle = tr.R > 0 ? "rgba(38,166,154,.08)" : "rgba(239,83,80,.08)"; g.fillRect(xe, m.t, Math.max(2, xx - xe), ph);
+  // prior-day lines
+  if (SHOW.pd) {
+    g.setLineDash([2, 3]); g.lineWidth = 1.2; g.strokeStyle = COL.pd; g.fillStyle = COL.pd;
+    for (const [v, lab] of [[pdh, "PDH"], [pdl, "PDL"], [pdc, "PDC"]]) { if (v < lo || v > hi) continue; const y = Math.round(Y(v)) + 0.5; g.beginPath(); g.moveTo(m.l, y); g.lineTo(W - m.r, y); g.stroke(); if (big) g.fillText(lab, m.l + 3, y - 3); else if (lab === "PDC") g.fillText("PDC", m.l + 2, y - 2); }
+    g.setLineDash([]);
+  }
+  // volume
+  if (SHOW.vol) {
+    let vmax = 0; for (const b of bars) if (b.v > vmax) vmax = b.v;
+    const vb = m.t + ph + volH, bw = Math.max(1, (pw / 390) * tf * 0.75);
+    for (const b of bars) { const vh = vmax ? (b.v / vmax) * (volH - 4) : 0; g.fillStyle = b.c >= b.o ? COL.volUp : COL.volDn; g.fillRect(X(b.m + tf / 2) - bw / 2, vb - vh, bw, vh); }
+  }
+  // strategy levels (dashed gold): contraction box, momentum high, breakout trigger
+  if (SHOW.lv) {
+    const cx0 = X(M[tr.w0]), cx1 = X(M[tr.i]);
+    g.fillStyle = "rgba(224,164,58,.10)"; g.fillRect(cx0, Y(tr.trigger), cx1 - cx0, Y(tr.stop) - Y(tr.trigger));
+    g.setLineDash([6, 4]); g.strokeStyle = COL.gold; g.lineWidth = 1.3; g.strokeRect(cx0 + .5, Y(tr.trigger) + .5, cx1 - cx0, Y(tr.stop) - Y(tr.trigger));
+    const hz = (v, x0, lab) => { if (!isFinite(v) || v < lo || v > hi) return; const y = Math.round(Y(v)) + .5; g.beginPath(); g.moveTo(x0, y); g.lineTo(W - m.r, y); g.stroke(); if (big) { g.setLineDash([]); g.fillStyle = COL.gold; g.fillText(lab, W - m.r - g.measureText(lab).width - 4, y - 3); g.setLineDash([6, 4]); } };
+    hz(tr.trigger, cx0, "breakout trigger " + tr.trigger.toFixed(2));
+    if (tr.momHiIdx >= 0 && Math.abs(tr.momHigh - tr.trigger) > (hi - lo) * 0.01) hz(tr.momHigh, X(M[tr.momHiIdx]), "momentum high " + tr.momHigh.toFixed(2));
+    g.setLineDash([]);
+    if (tr.momStart >= 0 && S.dayOf[tr.momStart] === d) { const mx = X(M[tr.momStart] + 2.5), my = Y(S.H[tr.momStart]); g.fillStyle = COL.gold; g.beginPath(); g.arc(mx, my - (big ? 9 : 6), big ? 3.5 : 2.5, 0, 7); g.fill(); if (big) g.fillText("momentum: " + tr.momType, mx + 6, my - 6); }
+  }
+  // candles
+  const cw = Math.max(1, (pw / 390) * tf * 0.72);
+  for (const b of bars) {
+    const xc = X(b.m + tf / 2), col = b.c >= b.o ? COL.up : COL.dn; g.strokeStyle = col; g.fillStyle = col; g.lineWidth = 1;
+    g.beginPath(); g.moveTo(Math.round(xc) + 0.5, Y(b.h)); g.lineTo(Math.round(xc) + 0.5, Y(b.l)); g.stroke();
+    const y1 = Y(Math.max(b.o, b.c)), y2 = Y(Math.min(b.o, b.c)); g.fillRect(xc - cw / 2, y1, cw, Math.max(1, y2 - y1));
+  }
+  // indicator lines
+  const line = (arr, col, w) => { g.strokeStyle = col; g.lineWidth = w; g.beginPath(); let st = false; for (let i = 0; i < n; i++) { const v = arr[i]; if (v < lo || v > hi) { st = false; continue; } const x0 = X(bars[i].m + tf / 2), yy = Y(v); if (!st) { g.moveTo(x0, yy); st = true; } else g.lineTo(x0, yy); } g.stroke(); };
+  const lw = big ? 1.6 : 1.25;
+  if (SHOW.e50) line(dd.e50, COL.e50, lw);
+  if (SHOW.avwap) line(dd.av, COL.av, lw);
+  if (SHOW.vwap) line(dd.vw, COL.vw, lw);
+  if (SHOW.e20) line(dd.e20, COL.e20, lw);
+  if (SHOW.e9) line(dd.e9, COL.e9, lw);
+  // stop, entry ▲, exit ✕
+  g.setLineDash([4, 3]); g.strokeStyle = "#ef5350"; g.lineWidth = 1.4; g.beginPath(); g.moveTo(xe, Y(tr.stop)); g.lineTo(xx, Y(tr.stop)); g.stroke(); g.setLineDash([]);
+  if (big) { g.fillStyle = "#ef5350"; g.fillText("stop " + tr.stop.toFixed(2), xe + 4, Y(tr.stop) + 12); }
+  const ey = Y(tr.entry), s = big ? 8 : 6; g.fillStyle = "#ffffff"; g.beginPath();
+  g.moveTo(xe, ey + 2); g.lineTo(xe - s, ey + 2 + s * 1.6); g.lineTo(xe + s, ey + 2 + s * 1.6); g.fill();
+  const xy = Y(tr.exit); g.strokeStyle = "#ffffff"; g.lineWidth = 2; g.beginPath(); g.moveTo(xx - s * .7, xy - s * .7); g.lineTo(xx + s * .7, xy + s * .7); g.moveTo(xx + s * .7, xy - s * .7); g.lineTo(xx - s * .7, xy + s * .7); g.stroke(); g.lineWidth = 1;
+  if (big && tf < 5) { g.fillStyle = COL.axis; g.fillText("signals use 5-min bars; ✕ marks the 5-min exit bar", m.l + 4, m.t + ph - 6); }
+  return { X, Y, m, pw, ph, bars, dd, tf, lo, hi };
+}
+function drawDaily(cv, x, nDays, big, nAfter = 0) {
+  if (!cv) return; const S = x.S, d = x.d, dpr = window.devicePixelRatio || 1, W = cv.clientWidth, H = cv.clientHeight; if (!W || !H) return;
+  cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr); const g = cv.getContext("2d"); g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, W, H);
+  const a0 = Math.max(0, d - nDays + 1), a1 = Math.min(S.ND - 1, d + nAfter), n = a1 - a0 + 1, A3 = [S.sma.s20, S.sma.s50, S.sma.s200];
+  let lo = Infinity, hi = -Infinity; for (let i = a0; i <= a1; i++) { lo = Math.min(lo, S.dL[i]); hi = Math.max(hi, S.dH[i]); }
+  for (const A of A3) for (let i = a0; i <= a1; i++) if (isFinite(A[i])) { if (A[i] < lo && A[i] > lo - (hi - lo) * 0.3) lo = A[i]; if (A[i] > hi && A[i] < hi + (hi - lo) * 0.3) hi = A[i]; }
+  const pad = (hi - lo) * 0.06 || 0.01; lo -= pad; hi += pad;
+  const m = big ? { l: 8, r: 64, t: 8, b: 18 } : { l: 4, r: 44, t: 4, b: 12 }, pw = W - m.l - m.r, ph = H - m.t - m.b;
+  const X = (i) => m.l + ((i - a0 + 0.5) / n) * pw, Y = (p) => m.t + (1 - (p - lo) / (hi - lo)) * ph, bw = Math.max(1, (pw / n) * 0.66);
+  g.font = `${big ? 11 : 9}px ui-monospace, Menlo, monospace`; g.strokeStyle = "#1f1f1d"; g.fillStyle = "#6f6d66";
+  const st = niceStep((hi - lo) / (big ? 4 : 2)); for (let p = Math.ceil(lo / st) * st; p <= hi; p += st) { const y = Math.round(Y(p)) + .5; g.beginPath(); g.moveTo(m.l, y); g.lineTo(W - m.r, y); g.stroke(); g.fillText(p.toFixed(st < 1 ? 1 : 0), W - m.r + 5, y + 3); }
+  if (a1 > d) { g.fillStyle = "rgba(255,255,255,.035)"; g.fillRect(X(d) + pw / n / 2 + 1, m.t, X(a1) - X(d) + pw / n / 2 - 1, ph); g.fillStyle = "#85837b"; g.fillText("after →", X(d) + pw / n / 2 + 4, m.t + (big ? 12 : 9)); }
+  g.fillStyle = "rgba(79,143,247,.22)"; g.fillRect(X(d) - pw / n / 2 - 1, m.t, pw / n + 2, ph);
+  for (let i = a0; i <= a1; i++) { const col = S.dC[i] >= S.dO[i] ? "#26a69a" : "#ef5350", x0 = X(i); g.strokeStyle = col; g.fillStyle = col; g.lineWidth = 1;
+    g.beginPath(); g.moveTo(Math.round(x0) + .5, Y(S.dH[i])); g.lineTo(Math.round(x0) + .5, Y(S.dL[i])); g.stroke(); const y1 = Y(Math.max(S.dO[i], S.dC[i])), y2 = Y(Math.min(S.dO[i], S.dC[i])); g.fillRect(x0 - bw / 2, y1, bw, Math.max(1, y2 - y1)); }
+  for (const [A, col] of [[S.sma.s200, "#c9c7bf"], [S.sma.s50, "#4f8ff7"], [S.sma.s20, "#f5b041"]]) { g.strokeStyle = col; g.lineWidth = big ? 1.4 : 1; g.beginPath(); let s0 = false; for (let i = a0; i <= a1; i++) { const v = A[i]; if (!isFinite(v) || v < lo || v > hi) { s0 = false; continue; } s0 ? g.lineTo(X(i), Y(v)) : g.moveTo(X(i), Y(v)); s0 = true; } g.stroke(); }
+  g.fillStyle = "#6f6d66"; const every = big ? 20 : 30; for (let i = d; i >= a0; i -= every) g.fillText(S.dates[i].slice(2, 7), Math.max(m.l, X(i) - 14), H - 3);
+  if (!big) { g.fillStyle = "#85837b"; g.fillText("daily", m.l + 3, m.t + 9); }
+  if (d - a0 + 1 < nDays) { g.fillStyle = "#85837b"; const t = "data starts " + S.dates[0]; g.fillText(t, big ? m.l + 6 : m.l + 34, m.t + (big ? 12 : 9)); }
+}
+function niceStep(raw) { const p = Math.pow(10, Math.floor(Math.log10(raw))), f = raw / p; return (f < 1.5 ? 1 : f < 3 ? 2 : f < 7 ? 5 : 10) * p; }
+
+/* ---------- grid ---------- */
+const pct = (v, dp = 2) => (v >= 0 ? "+" : "") + (v * 100).toFixed(dp) + "%";
+const fR = (v) => (v >= 0 ? "+" : "") + v.toFixed(2) + "R";
+const TYPE_LAB = { trendUp: "TREND UP", trendDn: "TREND DOWN", range: "CHOPPY", revUp: "REVERSAL UP", revDn: "REVERSAL DOWN" };
+const ERA_LAB = { "2000": "2000–09", "2010": "2010–17", "2018": "2018–20", "2021": "2021+" };
+const EXIT_LAB = { stop: "STOPPED", target: "TARGET 2R", eod: "HELD TO CLOSE" };
+function tags(x) {
+  const tr = x.tr, M = x.S.M, ck = CHECKS[x.id], t = [];
+  t.push(`<span class="tag up">LONG ${mmToHHMM(M[tr.ei])}</span>`,
+    `<span class="tag">${tr.reason === "eod" ? "HELD TO CLOSE" : EXIT_LAB[tr.reason] + " " + mmToHHMM(M[tr.xi])}</span>`,
+    `<span class="tag gold">MOMENTUM: ${tr.momType.toUpperCase()}</span>`,
+    `<span class="tag chk ${ck === "ok" ? "ok" : ck === "bad" ? "bad" : ""}" data-ck="${x.id}" title="Click to cycle: not reviewed → ✓ → ✗">${ck === "ok" ? "✓ CHECKED" : ck === "bad" ? "✗ WRONG" : "NOT REVIEWED"}</span>`);
+  t.push(`<span class="tag ${x.gap >= 0 ? "up" : "dn"}">GAP ${pct(x.gap)}${isFinite(x.gapA) ? " · " + x.gapA.toFixed(2) + " ATR" : ""}</span>`);
+  if (Math.abs(x.gapA) >= 0.1) t.push(`<span class="tag">${x.filled ? "GAP FILLED" : "GAP HELD"}</span>`);
+  t.push(`<span class="tag ${x.type.endsWith("Up") ? "up" : x.type.endsWith("Dn") ? "dn" : ""}">${TYPE_LAB[x.type]}</span>`);
+  if (isFinite(x.rngA)) t.push(`<span class="tag">RANGE ${x.rngA.toFixed(2)} ATR</span>`);
+  t.push(`<span class="tag era">${ERA_LAB[x.era]}</span>`);
+  return t.join("");
+}
+let io = null;
+function renderGrid() {
+  const n = LIST.length, pages = Math.max(1, Math.ceil(n / PAGE)); page = Math.min(page, pages - 1);
+  $("count").textContent = `${n.toLocaleString()} trades match · showing ${n ? page * PAGE + 1 : 0}–${Math.min(n, (page + 1) * PAGE)}`;
+  const sl = LIST.slice(page * PAGE, (page + 1) * PAGE);
+  $("grid").innerHTML = sl.map((x, i) => {
+    const wd = WD[new Date(x.date + "T12:00:00Z").getUTCDay()];
+    return `<article class="card" data-i="${page * PAGE + i}" tabindex="0" aria-label="${x.sym} ${x.date} trade chart">
+      <div class="ch"><span class="d"><span class="tk">${x.sym}</span>${x.date}<small>${wd}</small></span><span class="oc ${x.tr.R > 0 ? "pos" : "neg"}">${fR(x.tr.R)}</span></div>
+      <div class="tags">${tags(x)}</div><canvas class="mini"></canvas>${SHOW.daily ? `<canvas class="dmini"></canvas>` : ""}</article>`;
+  }).join("");
+  if (io) io.disconnect();
+  io = new IntersectionObserver((ents) => { for (const e of ents) if (e.isIntersecting) { const c = e.target, x = LIST[+c.dataset.i]; draw(c.querySelector("canvas.mini"), x, TF, false); if (SHOW.daily) drawDaily(c.querySelector("canvas.dmini"), x, 45, false, 10); io.unobserve(c); } }, { rootMargin: "300px" });
+  document.querySelectorAll(".card").forEach((c) => io.observe(c));
+  const btn = (p, lab, dis) => `<button class="btn" data-p="${p}" ${dis ? "disabled style=opacity:.4" : ""}>${lab}</button>`;
+  $("pager").innerHTML = n ? btn(0, "« First", page === 0) + btn(page - 1, "‹ Prev", page === 0) + `<span>Page ${page + 1} of ${pages}</span>` + btn(page + 1, "Next ›", page >= pages - 1) + btn(pages - 1, "Last »", page >= pages - 1) : "<span>No trades match these filters.</span>";
+}
+
+/* ---------- modal ---------- */
+let MG = null;
+function openModal(i) { modalPos = i; $("modal").classList.add("open"); document.body.style.overflow = "hidden"; drawModal(); $("mClose").focus(); }
+function closeModal() { if (modalPos >= 0) setTimeout(renderGrid, 0); modalPos = -1; $("modal").classList.remove("open"); document.body.style.overflow = ""; $("tip").style.display = "none"; }
+function syncTfButtons(id, x, cur) {
+  const ok1 = x ? has1m(x) : !!M1, eff = ok1 ? cur : 5;
+  $(id).querySelectorAll("button").forEach((b) => {
+    const v = +b.dataset.v; b.disabled = v < 5 && !ok1;
+    b.title = b.disabled ? "1-minute bars are not available for this dataset" : "";
+    b.setAttribute("aria-pressed", String(v === eff));
+  });
+}
+function drawModal() {
+  const x = LIST[modalPos]; if (!x) return;
+  $("tip").style.display = "none";
+  const wd = WD[new Date(x.date + "T12:00:00Z").getUTCDay()], d = x.d, S = x.S, t = x.tr, M = S.M, ck = CHECKS[x.id];
+  $("mTitle").textContent = `${x.sym} · ${x.date} (${wd}) · ${modalPos + 1} of ${LIST.length}`;
+  $("mOk").style.borderColor = ck === "ok" ? "var(--up)" : ""; $("mBad").style.borderColor = ck === "bad" ? "var(--dn)" : "";
+  syncTfButtons("mTf", x, MTF);
+  const exitLab = { stop: "stopped", target: "2R target", eod: "close", trail: "close < EMA9" };
+  const trade = [["Trade", `LONG · momentum: ${t.momType}`], ["Entry", `${mmToHHMM(M[t.ei])} @ ${t.entry.toFixed(2)}`], ["Stop", `${t.stop.toFixed(2)} (contraction low)`], ["Risk", `${t.risk.toFixed(2)} · ${(100 * t.risk / t.entry).toFixed(2)}%`],
+    ["Target", t.target.toFixed(2)], ["Exit", `${mmToHHMM(M[t.xi])} @ ${t.exit.toFixed(2)} (${exitLab[t.reason]})`], ["Result", `<span class="${t.R > 0 ? "pos" : "neg"}">${fR(t.R)}</span>`],
+    ["Trailing exit", `<span class="${t.RT > 0 ? "pos" : "neg"}">${fR(t.RT)}</span> (${exitLab[t.reasonT]} ${mmToHHMM(M[t.xiT])})`], ["MFE / MAE", `${fR(t.mfe)} / ${fR(t.mae)}`],
+    ["Review", ck === "ok" ? "✓ correct" : ck === "bad" ? "✗ wrong" : "not reviewed (Y / N)"]];
+  const levels = [["Signal bar", mmToHHMM(M[t.i])], ["Momentum high", isFinite(t.momHigh) ? `${t.momHigh.toFixed(2)} @ ${S.dayOf[t.momHiIdx] === d ? mmToHHMM(M[t.momHiIdx]) : "prior bar"}` : "—"], ["Breakout trigger", `${t.trigger.toFixed(2)} (contraction high)`],
+    ["Pullback", isFinite(t.retrace) ? (100 * t.retrace).toFixed(0) + "% of the leg" : "—"], ["Contraction", `${t.contrRatio.toFixed(2)} ATR avg range${t.inside ? " · inside bar" : ""}`],
+    ["Breakout bar", `${t.boRangeAtr.toFixed(2)} ATR · RVOL ${isFinite(t.rvol) ? t.rvol.toFixed(2) + "×" : "—"}`], ["5-min ATR unit", t.a.toFixed(3)], ["Daily gate", `21-day return ${pct(t.dailyRet, 1)}, above daily EMA 21`]];
+  const day = [["Open", S.dO[d].toFixed(2)], ["High", S.dH[d].toFixed(2)], ["Low", S.dL[d].toFixed(2)], ["Close", S.dC[d].toFixed(2)], ["Prior close", S.dC[d - 1].toFixed(2)],
+    ["Gap", pct(x.gap) + (isFinite(x.gapA) ? ` (${x.gapA.toFixed(2)} ATR)` : "")], ["Gap", Math.abs(x.gapA) >= 0.1 ? (x.filled ? "filled" : "held all day") : "small"],
+    ["Open→close", pct(x.oc)], ["Range", isFinite(x.rngA) ? x.rngA.toFixed(2) + " ATR" : "—"], ["ATR(14)", isFinite(x.a) ? x.a.toFixed(2) : "—"], ["Close in range", (x.clv * 100).toFixed(0) + "%"], ["Type", TYPE_LAB[x.type].toLowerCase()]];
+  const row = (a) => a.map(([k, v]) => `<span>${k} <b>${v}</b></span>`).join("");
+  $("mStats").innerHTML = row(trade) + `<span style="flex-basis:100%;height:0"></span>` + row(levels) + `<span style="flex-basis:100%;height:0"></span>` + row(day);
+  MG = draw($("big"), x, MTF, true);
+  $("bigD").hidden = !SHOW.daily; $("bigDLab").hidden = !SHOW.daily;
+  if (SHOW.daily) { $("bigDLab").textContent = `DAILY CONTEXT · ${x.sym} · 90 sessions before ${x.date} (highlighted) and 20 after (shaded)`; drawDaily($("bigD"), x, 90, true, 20); }
+}
+function tipMove(ev) {
+  if (!MG) return; const cv = $("big"), r = cv.getBoundingClientRect(), px = ev.clientX - r.left;
+  const min = ((px - MG.m.l) / MG.pw) * 390; if (min < 0 || min > 390) { $("tip").style.display = "none"; return; }
+  let best = -1, bd = 1e9; MG.bars.forEach((b, i) => { const dd = Math.abs(b.m + MG.tf / 2 - min); if (dd < bd) { bd = dd; best = i; } });
+  if (best < 0) return; const b = MG.bars[best], D = MG.dd;
+  const row = (c, k, v) => `<div><span style="color:${c}">■</span> ${k} <b>${v.toFixed(2)}</b></div>`;
+  $("tip").innerHTML = `<div><b>${mmToHHMM(b.m)}</b> · O ${b.o.toFixed(2)} H ${b.h.toFixed(2)} L ${b.l.toFixed(2)} C <b>${b.c.toFixed(2)}</b> · Vol ${Math.round(b.v).toLocaleString()}</div>` +
+    row(COL.e9, "EMA 9", D.e9[best]) + row(COL.e20, "EMA 20", D.e20[best]) + row(COL.e50, "EMA 50", D.e50[best]) + row(COL.vw, "VWAP", D.vw[best]) + row(COL.av, "AVWAP", D.av[best]);
+  const t = $("tip"); t.style.display = "block";
+  const left = px + 16 + t.offsetWidth > r.width ? px - t.offsetWidth - 12 : px + 16;
+  t.style.left = left + 10 + "px"; t.style.top = (ev.clientY - r.top + 10) + "px";
+}
+
+/* ---------- dataset switch ---------- */
+async function showDataset(key) {
+  DSK = key;
+  const L = await loadDataset(key);
+  SYMS = L.SYMS; BYSYM = L.BYSYM; M1 = L.M1; CACHE.clear();
+  DAYS = buildDays(L);
+  const R = DAYS.map((x) => x.tr.R), w = R.filter((v) => v > 0).length, avg = R.reduce((a, b) => a + b, 0) / R.length;
+  const first = DAYS.reduce((a, x) => (x.date < a ? x.date : a), "9"), last = DAYS.reduce((a, x) => (x.date > a ? x.date : a), "0");
+  $("sub").innerHTML = `Every trade of the momentum breakout system · ${DS[key].label}, ${first} → ${last}, recomputed in your browser from the 5-minute bars. ` +
+    `Rules: daily gate (prior 21-day return ≥ 10%, prior close above the daily EMA 21) → momentum (gap ≥ 3% on 2× opening volume, a thrust bar ≥ 1.5 ATR closing in its top 25% on 2× volume, or 5 of 6 higher closes gaining ≥ 2 ATR) → ` +
+    `pullback ≥ 0.5 ATR retracing ≤ 61.8% of the leg within 30 bars → 3 tight bars (avg range ≤ 0.7 ATR, closes within 0.6 ATR, |EMA4 − EMA9| ≤ 0.5 ATR, close ≥ EMA21) → ` +
+    `breakout: close above the contraction high on a bar ≥ 1.5× the contraction range, top 25% close, volume ≥ the time-of-day average, 09:45–15:30. Long only; entry next 5-min open, stop at the contraction low, exit at 2R or the close, 5 bps slippage per side · ` +
+    `<b>${DAYS.length.toLocaleString()} trades</b>, ${(100 * w / R.length).toFixed(0)}% winners, avg ${avg.toFixed(3)}R. ▲ entry · ✕ exit · dashed gold = strategy levels · dashed red = stop. Mark each trade ✓ / ✗ (Y / N in the full view); marks stay in this browser.`;
+  const syms = [...new Set(DAYS.map((x) => x.sym))].sort(), cnt = {}; for (const x of DAYS) cnt[x.sym] = (cnt[x.sym] || 0) + 1;
+  F.sym = ""; $("fSym").innerHTML = `<option value="">All (${syms.length})</option>` + syms.map((s) => `<option value="${s}">${s} (${cnt[s]})</option>`).join("");
+  const years = [...new Set(DAYS.map((x) => x.y))].sort();
+  F.year = ""; $("fYear").innerHTML = `<option value="">Any</option>` + years.map((y) => `<option>${y}</option>`).join("");
+  $("jump").min = first; $("jump").max = last; $("jump").value = "";
+  if (!M1 && TF < 5) TF = 5; syncTfButtons("fTf", null, TF);
+  $("statusNote").textContent = M1 ? "Click a chart to open it full size · ← → to step through trades · 1m/2m candles from 1-minute bars of the trade days · EMAs carry over from previous sessions"
+    : "Click a chart to open it full size · ← → to step through trades · 5-minute bars only for this dataset (1m/2m unavailable) · EMAs carry over from previous sessions";
+  MTF = M1 ? 1 : 5;
+  applyFilters();
+  const ov = $("loading"); if (ov) ov.style.display = "none";
+}
+
+/* ---------- wiring ---------- */
+function bindSeg(id, fn) { $(id).addEventListener("click", (e) => { const b = e.target.closest("button"); if (!b || b.disabled) return; $(id).querySelectorAll("button").forEach((q) => q.setAttribute("aria-pressed", String(q === b))); fn(b.dataset.v); }); }
+function wire() {
+  bindSeg("fDs", async (v) => { try { await showDataset(v); } catch (err) { setLoad("Could not load data: " + err.message); } });
+  bindSeg("fEra", (v) => { F.era = v; applyFilters(); });
+  bindSeg("fGap", (v) => { F.gap = v; applyFilters(); });
+  bindSeg("fRes", (v) => { F.res = v; applyFilters(); });
+  bindSeg("fTf", (v) => { TF = +v; CACHE.clear(); renderGrid(); });
+  bindSeg("mTf", (v) => { MTF = +v; drawModal(); });
+  $("fSym").addEventListener("change", (e) => { F.sym = e.target.value; applyFilters(); });
+  $("fYear").addEventListener("change", (e) => { F.year = e.target.value; applyFilters(); });
+  $("fType").addEventListener("change", (e) => { F.type = e.target.value; applyFilters(); });
+  $("fSort").addEventListener("change", (e) => { F.sort = e.target.value; applyFilters(); });
+  $("reshuffle").addEventListener("click", () => { seed = (seed * 7919 + 13) % 1000003; $("fSort").value = "shuffle"; F.sort = "shuffle"; applyFilters(); window.scrollTo({ top: 0 }); });
+  $("jump").addEventListener("change", (e) => {
+    const v = e.target.value; if (!v) return;
+    F.sym = ""; F.era = "all"; F.year = ""; F.gap = "all"; F.type = ""; F.res = "all"; F.sort = "old";
+    $("fSym").value = ""; $("fYear").value = ""; $("fType").value = ""; $("fSort").value = "old";
+    ["fEra", "fGap", "fRes"].forEach((id) => $(id).querySelectorAll("button").forEach((q, i) => q.setAttribute("aria-pressed", String(i === 0))));
+    applyFilters(); let i = LIST.findIndex((x) => x.date >= v); if (i < 0) i = LIST.length - 1; if (i < 0) return; page = Math.floor(i / PAGE); renderGrid(); openModal(i);
+  });
+  $("legend").addEventListener("change", (e) => { const k = e.target.dataset.k; if (!k) return; SHOW[k] = e.target.checked; renderGrid(); if (modalPos >= 0) drawModal(); });
+  $("grid").addEventListener("click", (e) => {
+    const ckEl = e.target.closest("[data-ck]");
+    if (ckEl) { const k = ckEl.dataset.ck; CHECKS[k] = CHECKS[k] === "ok" ? "bad" : CHECKS[k] === "bad" ? undefined : "ok"; if (!CHECKS[k]) delete CHECKS[k]; saveChecks(); renderGrid(); return; }
+    const c = e.target.closest(".card"); if (c) openModal(+c.dataset.i);
+  });
+  $("grid").addEventListener("keydown", (e) => { if (e.key === "Enter") { const c = e.target.closest(".card"); if (c) openModal(+c.dataset.i); } });
+  $("pager").addEventListener("click", (e) => { const b = e.target.closest("button[data-p]"); if (!b || b.disabled) return; page = +b.dataset.p; renderGrid(); window.scrollTo({ top: 0 }); });
+  $("mClose").addEventListener("click", closeModal);
+  const mark = (v) => { const x = LIST[modalPos]; if (!x) return; if (CHECKS[x.id] === v) delete CHECKS[x.id]; else CHECKS[x.id] = v; saveChecks(); drawModal(); };
+  $("mOk").addEventListener("click", () => mark("ok")); $("mBad").addEventListener("click", () => mark("bad"));
+  $("modal").addEventListener("click", (e) => { if (e.target.id === "modal") closeModal(); });
+  const step = (k) => { if (modalPos < 0) return; modalPos = Math.max(0, Math.min(LIST.length - 1, modalPos + k)); drawModal(); };
+  $("mPrev").addEventListener("click", () => step(-1)); $("mNext").addEventListener("click", () => step(1));
+  document.addEventListener("keydown", (e) => {
+    if (modalPos < 0) return;
+    if (e.key === "Escape") closeModal(); else if (e.key === "ArrowLeft") step(-1); else if (e.key === "ArrowRight") step(1);
+    else if (e.key === "y" || e.key === "Y") mark("ok"); else if (e.key === "n" || e.key === "N") mark("bad");
+  });
+  $("big").addEventListener("mousemove", tipMove); $("big").addEventListener("mouseleave", () => ($("tip").style.display = "none"));
+  let rt = 0; window.addEventListener("resize", () => { clearTimeout(rt); rt = setTimeout(() => { renderGrid(); if (modalPos >= 0) drawModal(); }, 200); });
+}
+
+(async () => {
+  try { wire(); await showDataset("broad"); }
+  catch (err) { setLoad("Could not load data: " + err.message + (location.protocol === "file:" ? " — open this page through a web server (e.g. GitHub Pages or python -m http.server), not from disk." : "")); }
+})();
+</script>
+</body>
+</html>
